@@ -9,7 +9,7 @@ module.exports = {
     type: 'templates',
 
     filterFile: function (file) {
-        console.log(file);
+        return /\.html$/.test(file);
     },
 
     build: function (options, done) {

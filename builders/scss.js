@@ -3,15 +3,33 @@ var glob = require('glob');
 var shortId = require('shortid');
 var fs = require('fs');
 var chalk = require('chalk');
+var when = require('when');
 
 var stylesheets = process.cwd() + '/assets/stylesheets';
 var compileFileDir = stylesheets;
 
-glob(stylesheets + '/**/!(_*).scss', {}, function (error, files) {
-    console.log(files);
-});
-
 module.exports = {
+
+    activate: function () {
+        return when.promise(function (resolve, reject) {
+            cp.exec('which scss', function (error, stdout, stderr) {
+                if (error || stderr) {
+                    var msg = '';
+
+                    msg += "*********************\n";
+                    msg += "SCSS is not installed! Install it using:\n";
+                    msg += "\n";
+                    msg += chalk.yellow(" $ gem install sass");
+                    msg += "\n*********************\n";
+
+                    reject(msg);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    },
+
     files: stylesheets,
 
     filterFile: function (file) {
@@ -26,7 +44,7 @@ module.exports = {
         glob(stylesheets + '/**/!(_*).scss', {}, function (error, files) {
             files.forEach(function (sassFile) {
                 filesToBuild[sassFile] = sassFile.replace('.scss', '.css');
-            })
+            });
 
             buildFiles(filesToBuild, options, done);
         });
@@ -50,25 +68,32 @@ function buildFiles(filesToBuild, options, done) {
         filesToBuildCmd.push(compileFile + ':' + filesToBuild[sassFile]);
     });
 
-    cp.exec('scss ' + filesToBuildCmd.join(' '), function (error, stdout, stderr) {
+    var cmd = 'scss ' + filesToBuildCmd.join(' ');
+    cp.exec(cmd, function (error, stdout, stderr) {
+        var ok = true;
+
         if (error || stderr) {
             console.log(chalk.red('There was an error building the files'));
             console.log(error);
             console.log(stderr);
 
-            return;
+            ok = false;
         }
 
-        console.log(stdout);
+        if (stdout) {
+            console.log(stdout);
+        }
 
         compileFiles.forEach(function (compileFile) {
             fs.unlink(compileFile);
         });
 
-        var styleUrls = Object.keys(filesToBuild).map(function (key) {
-            return filesToBuild[key].replace(stylesheets, options.host + '/stylesheets') + '?' + shortId.generate();
-        });
+        if (ok) {
+            var styleUrls = Object.keys(filesToBuild).map(function (key) {
+                return filesToBuild[key].replace(stylesheets, options.host + '/stylesheets') + '?' + shortId.generate();
+            });
 
-        done(styleUrls);
+            done(styleUrls);
+        }
     });
 }
