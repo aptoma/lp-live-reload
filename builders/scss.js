@@ -68,7 +68,7 @@ function buildFiles(filesToBuild, options, done) {
         filesToBuildCmd.push(compileFile + ':' + filesToBuild[sassFile]);
     });
 
-    var cmd = 'scss ' + filesToBuildCmd.join(' ');
+    var cmd = 'scss "' + filesToBuildCmd.join(' ') + '"';
     cp.exec(cmd, function (error, stdout, stderr) {
         var ok = true;
 
