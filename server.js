@@ -10,6 +10,8 @@ var fs = require('fs');
 var program = require('commander');
 var chalk = require('chalk');
 
+var version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
+
 program
     .usage('[options]')
     .version(version)
@@ -22,7 +24,6 @@ if (program.noColor) {
 }
 
 var revision = 'default';
-var version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
 var cwd = process.cwd();
 
 var ips = getIpAddresses();
