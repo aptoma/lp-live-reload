@@ -9,6 +9,7 @@ var watch = require('node-watch');
 var fs = require('fs');
 var program = require('commander');
 var chalk = require('chalk');
+var clipboard = require('copy-paste');
 
 var version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
 
@@ -17,37 +18,40 @@ program
     .version(version)
     .option('-p, --port <port>', 'Port number', 3000)
     .option('--no-color', 'Disable coloring')
+    .option('--no-copy', 'Disable sending the JavaScript command to the clipboard')
     .parse(process.argv)
 
-if (program.noColor) {
+if (!program.color) {
     chalk.enable = false;
 }
 
 var revision = 'default';
 var cwd = process.cwd();
 
-var ips = getIpAddresses();
-var host = 'http://' + ips[0].address + ':' + program.port;
+var hosts = getNetworks().map(function (network) {
+    return 'http://' + network.address + ':' + program.port;
+});
+
+var inClipboardMsg = '';
+
+if (program.copy) {
+    clipboard.copy('window.enableLiveReload(' + JSON.stringify(hosts) + ');');
+    inClipboardMsg = chalk.yellow(' (it\'s already in your clipboard)');
+}
 
 server.listen(program.port, function () {
-  console.log('Server listening on port', chalk.bold(program.port));
-  console.log('')
-  console.log(chalk.underline('To enable live reload do this:'));
-  console.log('');
-  console.log(chalk.bold(' *'), 'Open an article in', chalk.bold.blue('LayoutPreview'));
-  console.log(chalk.bold(' *'), 'Open the', chalk.bold.blue('Web Inspector console'));
-  console.log(chalk.bold(' *'), 'Run the following', chalk.bold.blue('JavaScript'), 'command:');
-  console.log('');
-  console.log('    ', chalk.bold('window.enableLiveReload("' + chalk.magenta(host) + '");'));
-  console.log('');
-  console.log(chalk.underline('NB! If the address above doesn\'t work, try one of these:'));
-  console.log('');
-  ips.slice(1).forEach(function (ip) {
-    console.log(chalk.bold(' *'), ip.iface + ":", chalk.bold.magenta('http://' + ip.address + ':' + program.port));
-  });
-  console.log('');
-  console.log(chalk.bold('**********************************************************'));
-  console.log('');
+    console.log('Server listening on port', chalk.bold(program.port));
+    console.log('')
+    console.log(chalk.underline('To enable live reload do this:'));
+    console.log('');
+    console.log(chalk.bold(' *'), 'Open an article in', chalk.bold.blue('LayoutPreview'));
+    console.log(chalk.bold(' *'), 'Open the', chalk.bold.blue('Web Inspector console'));
+    console.log(chalk.bold(' *') + ' Run the following ' + chalk.bold.blue('JavaScript') + ' command%s:', inClipboardMsg);
+    console.log('');
+    console.log(chalk.white('    window.enableLiveReload(%s);'), chalk.green(JSON.stringify(hosts)));
+    console.log('');
+    console.log(chalk.bold('**********************************************************'));
+    console.log('');
 });
 
 app.use(express.static(cwd + '/assets', {
@@ -61,10 +65,6 @@ var builders = [
     require('./builders/templates'),
     // require('./builders/less'),
 ];
-
-app.get('/client.js', function (req, res) {
-    res.sendFile(__dirname + '/client.js');
-});
 
 io.on('connection', function (socket) {
     host = 'http://' + socket.handshake.headers.host;
@@ -147,7 +147,7 @@ function watchBuilder(builder) {
 }
 
 
-function getIpAddresses() {
+function getNetworks() {
     var interfaces = os.networkInterfaces();
 
     var ips = [];
