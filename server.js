@@ -93,7 +93,7 @@ function runBuilder(builder) {
         revision: revision,
         host: host
     }, function (result) {
-        console.log("[%s]\tbuild [ %s ]", chalk.bold.blue(builder.type), chalk.bold.green('OK'));
+        console.log("[%s]\tbuild [ %s ]", chalk.bold.blue(builder.description || builder.type), chalk.bold.green('OK'));
         io.sockets.emit(builder.type, result);
     });
 }

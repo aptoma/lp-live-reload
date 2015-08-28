@@ -36,7 +36,9 @@ module.exports = {
         return /\.scss$/.test(file);
     },
 
-    type: 'SCSS files',
+    type: 'stylesheets',
+
+    description: 'SCSS files',
 
     build: function (options, done) {
         var filesToBuild = {};

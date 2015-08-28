@@ -20,7 +20,9 @@ module.exports = {
         return /\.less$/.test(file);
     },
 
-    type: 'LESS files',
+    type: 'stylesheets',
+
+    description: 'LESS files',
 
     build: function (options, done) {
         var filesToBuild = {};
