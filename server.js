@@ -31,6 +31,7 @@ var cwd = process.cwd();
 var hosts = getNetworks().map(function (network) {
     return 'http://' + network.address + ':' + program.port;
 });
+var host = hosts[0];
 
 var inClipboardMsg = '';
 
@@ -63,7 +64,7 @@ app.use(express.static(cwd + '/assets', {
 var builders = [
     require('./builders/scss'),
     require('./builders/templates'),
-    // require('./builders/less'),
+    require('./builders/less')
 ];
 
 io.on('connection', function (socket) {

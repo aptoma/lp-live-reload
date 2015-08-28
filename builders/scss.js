@@ -36,7 +36,7 @@ module.exports = {
         return /\.scss$/.test(file);
     },
 
-    type: 'stylesheets',
+    type: 'SCSS files',
 
     build: function (options, done) {
         var filesToBuild = {};
@@ -46,7 +46,9 @@ module.exports = {
                 filesToBuild[sassFile] = sassFile.replace('.scss', '.css');
             });
 
-            buildFiles(filesToBuild, options, done);
+            if (files.length) {
+                buildFiles(filesToBuild, options, done);
+            }
         });
     }
 }
