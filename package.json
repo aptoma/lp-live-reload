@@ -1,6 +1,6 @@
 {
   "name": "lp-live-reload",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "LayoutPreview live reload module",
   "main": "server.js",
   "scripts": {
