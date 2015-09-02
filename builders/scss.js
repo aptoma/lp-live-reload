@@ -12,22 +12,32 @@ module.exports = {
 
     activate: function () {
         return when.promise(function (resolve, reject) {
-            cp.exec('which scss', function (error, stdout, stderr) {
-                if (error || stderr) {
-                    var msg = '';
+            findFiles()
+                .then(function (files) {
+                    if (!files.length) {
+                        return resolve();
+                    }
 
-                    msg += "*********************\n";
-                    msg += "SCSS is not installed! Install it using:\n";
-                    msg += "\n";
-                    msg += chalk.yellow(" $ gem install sass");
-                    msg += "\n*********************\n";
+                    cp.exec('which scss', function (error, stdout, stderr) {
+                        if (error || stderr) {
+                            var msg = '';
 
-                    reject(msg);
-                } else {
-                    resolve();
-                }
-            });
-        });
+                            msg += "*********************\n";
+                            msg += "SCSS is not installed! Install it using:\n";
+                            msg += "\n";
+                            msg += chalk.yellow(" $ gem install sass");
+                            msg += "\n*********************\n";
+
+                            reject(msg);
+                        } else {
+                            resolve();
+                        }
+                    });
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     },
 
     files: stylesheets,
@@ -53,6 +63,14 @@ module.exports = {
             }
         });
     }
+}
+
+function findFiles() {
+    return when.promise(function (resolve, reject) {
+        glob(stylesheets + '/**/!(_*).scss', {}, function (error, files) {
+            error ? reject(error) : resolve(files);
+        });
+    });
 }
 
 function buildFiles(filesToBuild, options, done) {
