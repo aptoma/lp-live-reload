@@ -25,7 +25,7 @@ program
     .version(version)
     .option('-p, --port <port>', 'Port number', 3000)
     .option('--no-color', 'Disable coloring')
-    .option('--no-copy', 'Disable sending the JavaScript command to the clipboard')
+    .option('--no-copy', 'Disable copying the JavaScript command to the clipboard')
     .parse(process.argv)
 
 if (!program.color) {
