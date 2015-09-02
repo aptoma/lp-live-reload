@@ -3,8 +3,7 @@
 var express = require('express');
 var os = require('os');
 var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
+var https = require('https');
 var watch = require('node-watch');
 var fs = require('fs');
 var program = require('commander');
@@ -12,6 +11,14 @@ var chalk = require('chalk');
 var clipboard = require('copy-paste');
 
 var version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
+
+var server = https.createServer({
+    key: fs.readFileSync(__dirname + '/ssl/server.key'),
+    cert: fs.readFileSync(__dirname + '/ssl/server.crt'),
+    ca: fs.readFileSync(__dirname + '/ssl/ca.crt')
+}, app);
+
+var io = require('socket.io')(server);
 
 program
     .usage('[options]')
@@ -29,7 +36,7 @@ var revision = 'default';
 var cwd = process.cwd();
 
 var hosts = getNetworks().map(function (network) {
-    return 'http://' + network.address + ':' + program.port;
+    return 'https://' + network.address + ':' + program.port;
 });
 var host = hosts[0];
 
@@ -51,8 +58,13 @@ server.listen(program.port, function () {
     console.log('');
     console.log(chalk.white('    window.enableLiveReload(%s);'), chalk.green(JSON.stringify(hosts)));
     console.log('');
+    console.log('NB! If you get', chalk.red('net::ERR_INSECURE_RESPONSE'), 'go to', chalk.yellow.bold(host + '/ready'), 'and allow the browser to use the self-signed certificate');
     console.log(chalk.bold('**********************************************************'));
     console.log('');
+});
+
+app.get('/ready', function (req, res) {
+    res.send('Congratulations! You are ready to start using LayoutPreview live reload!');
 });
 
 app.use(express.static(cwd + '/assets', {
@@ -68,7 +80,7 @@ var builders = [
 ];
 
 io.on('connection', function (socket) {
-    host = 'http://' + socket.handshake.headers.host;
+    host = 'https://' + socket.handshake.headers.host;
 
     socket.on('revision', function (rev) {
         console.log('Assets revision', chalk.bold.magenta(rev) + "\n");
