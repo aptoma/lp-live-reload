@@ -13,8 +13,8 @@ It starts a HTTPS webserver, with a supplied self signed certificate, that serve
 
 The message you will get looks something like this:
 
-!(not_private.png)
+![Not private warning](not_private.png)
 
-!(not_private_proceed.png)
+![Click proceed](not_private_proceed.png)
 
 You need to click the **Proceed to xxx.xxx.xxx.xxx (unsafe)** text to allow connections. After doing this, you're ready to go!
