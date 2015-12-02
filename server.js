@@ -74,8 +74,8 @@ app.use(express.static(cwd + '/assets', {
 }));
 
 var builders = [
-    require('./builders/scss'),
     require('./builders/templates'),
+    require('./builders/scss'),
     require('./builders/less')
 ];
 
@@ -135,6 +135,8 @@ function startWatching() {
     isWatching = true;
 }
 
+var builderFiles = {};
+
 function watchBuilder(builder) {
     runBuilder(builder);
 
@@ -144,18 +146,30 @@ function watchBuilder(builder) {
         chalk.bold.blue(builder.type)
     );
 
-    watch(builder.files, function (filename) {
-        if (!builder.filterFile(filename)) {
-            return;
-        }
+    if (!builderFiles[builder.files]) {
+        registerWatcher(builder.files);
+    }
 
-        console.log(
-            "[%s]\t%s changed",
-            chalk.bold.blue(builder.type),
-            chalk.bold.magenta(filename.replace(cwd, '.'))
-        );
+    builderFiles[builder.files].push(builder);
+}
 
-        runBuilder(builder);
+function registerWatcher(path) {
+    builderFiles[path] = [];
+
+    watch(path, function (filename) {
+        builderFiles[path].forEach(function (builder) {
+            if (!builder.filterFile(filename)) {
+                return;
+            }
+
+            console.log(
+                "[%s]\t%s changed",
+                chalk.bold.blue(builder.type),
+                chalk.bold.magenta(filename.replace(cwd, '.'))
+            );
+
+            runBuilder(builder);
+        })
     });
 }
 
