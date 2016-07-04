@@ -11,7 +11,6 @@ var stylesheets = process.cwd() + '/assets/stylesheets';
 var compileFileDir = stylesheets;
 
 module.exports = {
-
     activate: function () {
         return when.resolve();
     },
@@ -56,4 +55,4 @@ module.exports = {
             });
         });
     }
-}
+};
