@@ -5,8 +5,9 @@ var fs = require('fs');
 var chalk = require('chalk');
 var when = require('when');
 var sass = require('node-sass');
+var path = require('path');
 
-var stylesheets = process.cwd() + '/assets/stylesheets';
+var stylesheets = path.normalize(process.cwd() + '/assets/stylesheets');
 var compileFileDir = stylesheets;
 
 module.exports = {
@@ -30,7 +31,7 @@ module.exports = {
 
         glob(stylesheets + '/**/!(_*).scss', {}, function (error, files) {
             files.forEach(function (sassFile) {
-                var cssFile = sassFile.replace('.scss', '.css');
+                var cssFile = path.normalize(sassFile.replace('.scss', '.css'));
                 var sassCode = fs.readFileSync(sassFile);
 
                 sassCode = '$alf-revision: ' + options.revision + ';' + sassCode;
@@ -49,8 +50,8 @@ module.exports = {
                     fs.writeFileSync(cssFile, output.css);
 
                     var fileUrl = cssFile.replace(stylesheets, options.host + '/stylesheets') + '?' + shortId.generate();
+                    fileUrl = fileUrl.replace(/\\/g, '/');
 
-                    console.log(fileUrl);
                     done([fileUrl]);
                 });
             });
