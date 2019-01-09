@@ -1,24 +1,29 @@
-var glob = require('glob');
-var fs = require('fs');
+'use strict';
 
-var templates = process.cwd() + '/templates/**/*.html';
+const glob = require('glob');
+const fs = require('fs');
+
+const templates = process.cwd() + '/templates/**/*.html';
 
 module.exports = {
-    files: process.cwd() + '/templates',
+	files: process.cwd() + '/templates',
 
-    type: 'templates',
+	type: 'templates',
 
-    filterFile: function (file) {
-        return /\.html$/.test(file);
-    },
+	filterFile(file) {
+		return /\.html$/.test(file);
+	},
 
-    build: function (options, done) {
-        glob(templates, {}, function (error, files) {
-            var templatesHtml = files.map(function (file) {
-                return fs.readFileSync(file);
-            }).join('');
+	build(options, done) {
+		glob(templates, {}, (error, files) => {
+			if (error) {
+				console.error(error);
+			}
+			const templatesHtml = files.map((file) => {
+				return fs.readFileSync(file); // eslint-disable-line no-sync
+			}).join('');
 
-            done(templatesHtml);
-        });
-    }
-}
+			done(templatesHtml);
+		});
+	}
+};

@@ -1,193 +1,193 @@
 #!/usr/bin/env node
+'use strict';
 
-var express = require('express');
-var os = require('os');
-var app = express();
-var https = require('https');
-var watch = require('node-watch');
-var fs = require('fs');
-var program = require('commander');
-var chalk = require('chalk');
-var clipboard = require('copy-paste');
+const express = require('express');
+const os = require('os');
+const app = express();
+const https = require('https');
+const watch = require('node-watch');
+const fs = require('fs');
+const program = require('commander');
+const chalk = require('chalk');
+const clipboard = require('copy-paste');
 
-var version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
+// eslint-disable-next-line no-sync
+const version = JSON.parse(fs.readFileSync(__dirname + '/package.json')).version;
 
-var server = https.createServer({
-    key: fs.readFileSync(__dirname + '/ssl/server.key'),
-    cert: fs.readFileSync(__dirname + '/ssl/server.crt'),
-    ca: fs.readFileSync(__dirname + '/ssl/ca.crt')
+const server = https.createServer({
+	key: fs.readFileSync(__dirname + '/ssl/server.key'), // eslint-disable-line no-sync
+	cert: fs.readFileSync(__dirname + '/ssl/server.crt'), // eslint-disable-line no-sync
+	ca: fs.readFileSync(__dirname + '/ssl/ca.crt') // eslint-disable-line no-sync
 }, app);
 
-var io = require('socket.io')(server);
+const io = require('socket.io')(server);
 
 program
-    .usage('[options]')
-    .version(version)
-    .option('-p, --port <port>', 'Port number', 3000)
-    .option('--no-color', 'Disable coloring')
-    .option('--no-copy', 'Disable copying the JavaScript command to the clipboard')
-    .parse(process.argv)
+	.usage('[options]')
+	.version(version)
+	.option('-p, --port <port>', 'Port number', 3000)
+	.option('--no-color', 'Disable coloring')
+	.option('--no-copy', 'Disable copying the JavaScript command to the clipboard')
+	.parse(process.argv);
 
 if (!program.color) {
-    chalk.enable = false;
+	chalk.enable = false;
 }
 
-var revision = 'default';
-var cwd = process.cwd();
+let revision = 'default';
+const cwd = process.cwd();
 
-var hosts = getNetworks().map(function (network) {
-    return 'https://' + network.address + ':' + program.port;
+const hosts = getNetworks().map((network) => {
+	return 'https://' + network.address + ':' + program.port;
 });
-var host = hosts[0];
+let host = hosts[0];
 
-var inClipboardMsg = '';
+let inClipboardMsg = '';
 
 if (program.copy) {
-    clipboard.copy('window.enableLiveReload(' + JSON.stringify(hosts) + ');');
-    inClipboardMsg = chalk.yellow(' (it\'s already in your clipboard)');
+	clipboard.copy('window.enableLiveReload(' + JSON.stringify(hosts) + ');');
+	inClipboardMsg = chalk.yellow(' (it\'s already in your clipboard)');
 }
 
-server.listen(program.port, function () {
-    console.log('Server listening on port', chalk.bold(program.port));
-    console.log('')
-    console.log(chalk.underline('To enable live reload do this:'));
-    console.log('');
-    console.log(chalk.bold(' *'), 'Open an article in', chalk.bold.blue('LayoutPreview'));
-    console.log(chalk.bold(' *'), 'Open the', chalk.bold.blue('Web Inspector console'));
-    console.log(chalk.bold(' *') + ' Run the following ' + chalk.bold.blue('JavaScript') + ' command%s:', inClipboardMsg);
-    console.log('');
-    console.log(chalk.white('    window.enableLiveReload(%s);'), chalk.green(JSON.stringify(hosts)));
-    console.log('');
-    console.log('NB! If you get', chalk.red('net::ERR_INSECURE_RESPONSE'), 'go to', chalk.yellow.bold(host + '/ready'), 'and allow the browser to use the self-signed certificate');
-    console.log(chalk.bold('**********************************************************'));
-    console.log('');
+server.listen(program.port, () => {
+	console.log('Server listening on port', chalk.bold(program.port));
+	console.log('');
+	console.log(chalk.underline('To enable live reload do this:'));
+	console.log('');
+	console.log(chalk.bold(' *'), 'Open an article in', chalk.bold.blue('LayoutPreview'));
+	console.log(chalk.bold(' *'), 'Open the', chalk.bold.blue('Web Inspector console'));
+	console.log(chalk.bold(' *') + ' Run the following ' + chalk.bold.blue('JavaScript') + ' command%s:', inClipboardMsg);
+	console.log('');
+	console.log(chalk.white('    window.enableLiveReload(%s);'), chalk.green(JSON.stringify(hosts)));
+	console.log('');
+	console.log('NB! If you get', chalk.red('net::ERR_INSECURE_RESPONSE'), 'go to', chalk.yellow.bold(host + '/ready'), 'and allow the browser to use the self-signed certificate');
+	console.log(chalk.bold('**********************************************************'));
+	console.log('');
 });
 
-app.get('/ready', function (req, res) {
-    res.send('Congratulations! You are ready to start using LayoutPreview live reload!');
+app.get('/ready', (req, res) => {
+	res.send('Congratulations! You are ready to start using LayoutPreview live reload!');
 });
 
 app.use(express.static(cwd + '/assets', {
-    setHeaders: function (res, path, stat) {
-        res.set('Access-Control-Allow-Origin', '*');
-    }
+	setHeaders(res) {
+		res.set('Access-Control-Allow-Origin', '*');
+	}
 }));
 
-var builders = [
-    require('./builders/templates'),
-    require('./builders/scss'),
-    require('./builders/less')
+const builders = [
+	require('./builders/templates'),
+	require('./builders/scss')
 ];
 
-io.on('connection', function (socket) {
-    host = 'https://' + socket.handshake.headers.host;
+io.on('connection', (socket) => {
+	host = 'https://' + socket.handshake.headers.host;
+	socket.on('revision', (rev) => {
+		console.log('Assets revision', chalk.bold.magenta(rev) + '\n');
 
-    socket.on('revision', function (rev) {
-        console.log('Assets revision', chalk.bold.magenta(rev) + "\n");
+		revision = rev;
+		startWatching();
+	});
 
-        revision = rev;
-        startWatching();
-    });
-
-    socket.on('disconnect', function () {
-        console.log(chalk.red('Client disconnected'));
-    });
+	socket.on('disconnect', () => {
+		console.log(chalk.red('Client disconnected'));
+	});
 });
 
 function buildAll() {
-    builders.forEach(function (builder) {
-        runBuilder(builder);
-    });
+	builders.forEach((builder) => {
+		runBuilder(builder);
+	});
 }
 
 function runBuilder(builder) {
-    builder.build({
-        revision: revision,
-        host: host
-    }, function (result) {
-        console.log("[%s]\tbuild [ %s ]", chalk.bold.blue(builder.description || builder.type), chalk.bold.green('OK'));
-        io.sockets.emit(builder.type, result);
-    });
+	builder.build({
+		revision: revision,
+		host: host
+	}, (result) => {
+		console.log('[%s]\tbuild [ %s ]', chalk.bold.blue(builder.description || builder.type), chalk.bold.green('OK'));
+		io.sockets.emit(builder.type, result);
+	});
 }
 
-var isWatching = false;
+let isWatching = false;
 
 function startWatching() {
-    if (isWatching) {
-        buildAll();
-        return;
-    }
+	if (isWatching) {
+		buildAll();
+		return;
+	}
 
-    builders.forEach(function (builder) {
-        if (!builder.activate) {
-            watchBuilder(builder);
-        } else {
-            builder.activate()
-                .then(function () {
-                    watchBuilder(builder);
-                })
-                .catch(function (error) {
-                    console.log(chalk.red(error));
-                });
-        }
-    });
+	builders.forEach((builder) => {
+		if (!builder.activate) {
+			watchBuilder(builder);
+		} else {
+			builder.activate()
+				.then(() => {
+					watchBuilder(builder);
+				})
+				.catch((error) => {
+					console.log(chalk.red(error));
+				});
+		}
+	});
 
-    isWatching = true;
+	isWatching = true;
 }
 
-var builderFiles = {};
+const builderFiles = {};
 
 function watchBuilder(builder) {
-    runBuilder(builder);
+	runBuilder(builder);
 
-    console.log(
-        'Watching %s for %s',
-        chalk.bold.magenta(builder.files.replace(cwd, '.')),
-        chalk.bold.blue(builder.type)
-    );
+	console.log(
+		'Watching %s for %s',
+		chalk.bold.magenta(builder.files.replace(cwd, '.')),
+		chalk.bold.blue(builder.type)
+	);
 
-    if (!builderFiles[builder.files]) {
-        registerWatcher(builder.files);
-    }
+	if (!builderFiles[builder.files]) {
+		registerWatcher(builder.files);
+	}
 
-    builderFiles[builder.files].push(builder);
+	builderFiles[builder.files].push(builder);
 }
 
 function registerWatcher(path) {
-    builderFiles[path] = [];
+	builderFiles[path] = [];
 
-    watch(path, function (filename) {
-        builderFiles[path].forEach(function (builder) {
-            if (!builder.filterFile(filename)) {
-                return;
-            }
+	watch(path, (evt, filename) => {
+		builderFiles[path].forEach((builder) => {
+			if (!builder.filterFile(filename)) {
+				return;
+			}
 
-            console.log(
-                "[%s]\t%s changed",
-                chalk.bold.blue(builder.type),
-                chalk.bold.magenta(filename.replace(cwd, '.'))
-            );
+			console.log(
+				'[%s]\t%s changed',
+				chalk.bold.blue(builder.type),
+				chalk.bold.magenta(filename.replace(cwd, '.'))
+			);
 
-            runBuilder(builder);
-        })
-    });
+			runBuilder(builder);
+		});
+	});
 }
 
 
 function getNetworks() {
-    var interfaces = os.networkInterfaces();
+	const interfaces = os.networkInterfaces();
 
-    var ips = [];
+	const ips = [];
 
-    Object.keys(interfaces).forEach(function (iface) {
-        var networks = interfaces[iface].filter(function (network) {
-            return network.family === 'IPv4' && !network.internal;
-        });
+	Object.keys(interfaces).forEach((iface) => {
+		const networks = interfaces[iface].filter((network) => {
+			return network.family === 'IPv4' && !network.internal;
+		});
 
-        networks.forEach(function (network) {
-            ips.push({iface: iface, address: network.address});
-        });
-    });
+		networks.forEach((network) => {
+			ips.push({iface: iface, address: network.address});
+		});
+	});
 
-    return ips;
+	return ips;
 }
