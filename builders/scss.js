@@ -9,7 +9,7 @@ const when = require('when');
 const sass = require('node-sass');
 const path = require('path');
 
-const stylesheets = path.normalize(process.cwd() + '/assets/stylesheets');
+const stylesheets = path.normalize(process.cwd() + '/stylesheets');
 // const compileFileDir = stylesheets;
 
 module.exports = {
@@ -18,7 +18,10 @@ module.exports = {
 		return when.resolve();
 	},
 
-	files: stylesheets,
+	files: [
+		stylesheets,
+		process.cwd() + '/components'
+	],
 
 	filterFile(file) {
 		return /\.scss$/.test(file);
@@ -29,8 +32,6 @@ module.exports = {
 	description: 'SCSS files',
 
 	build(options, done) {
-		// const filesToBuild = {};
-
 		glob(stylesheets + '/**/!(_*).scss', {}, (error, files) => {
 			if (error) {
 				console.log(error);
@@ -39,7 +40,7 @@ module.exports = {
 				const cssFile = path.normalize(sassFile.replace('.scss', '.css'));
 				let sassCode = fs.readFileSync(sassFile); // eslint-disable-line no-sync
 
-				sassCode = '$alf-revision: ' + options.revision + ';' + sassCode;
+				sassCode = '$revision: ' + options.revision + ';' + sassCode;
 				sass.render({
 					file: sassFile,
 					data: sassCode,

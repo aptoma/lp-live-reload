@@ -82,11 +82,11 @@ const builders = [
 
 io.on('connection', (socket) => {
 	host = 'https://' + socket.handshake.headers.host;
+	console.log('got connection', socket.handshake.headers);
 	socket.on('revision', (rev) => {
 		console.log('Assets revision', chalk.bold.magenta(rev) + '\n');
 
 		revision = rev;
-		startWatching();
 	});
 
 	socket.on('disconnect', () => {
@@ -118,6 +118,8 @@ function startWatching() {
 		return;
 	}
 
+	isWatching = true;
+
 	builders.forEach((builder) => {
 		if (!builder.activate) {
 			watchBuilder(builder);
@@ -131,8 +133,6 @@ function startWatching() {
 				});
 		}
 	});
-
-	isWatching = true;
 }
 
 const builderFiles = {};
@@ -140,23 +140,26 @@ const builderFiles = {};
 function watchBuilder(builder) {
 	runBuilder(builder);
 
-	console.log(
-		'Watching %s for %s',
-		chalk.bold.magenta(builder.files.replace(cwd, '.')),
-		chalk.bold.blue(builder.type)
-	);
+	builder.files.forEach((files) => {
+		console.log(
+			'Watching %s for %s',
+			chalk.bold.magenta(files.replace(cwd, '.')),
+			chalk.bold.blue(builder.type)
+		);
 
-	if (!builderFiles[builder.files]) {
-		registerWatcher(builder.files);
-	}
+		if (!builderFiles[files]) {
+			registerWatcher(files);
+		}
+		builderFiles[files].push(builder);
+	});
 
-	builderFiles[builder.files].push(builder);
 }
 
 function registerWatcher(path) {
+	console.log('registering watcher on', path);
 	builderFiles[path] = [];
 
-	watch(path, (evt, filename) => {
+	watch(path, {recursive: true}, (evt, filename) => {
 		builderFiles[path].forEach((builder) => {
 			if (!builder.filterFile(filename)) {
 				return;
@@ -191,3 +194,4 @@ function getNetworks() {
 
 	return ips;
 }
+startWatching();

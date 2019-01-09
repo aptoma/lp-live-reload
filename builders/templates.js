@@ -4,9 +4,13 @@ const glob = require('glob');
 const fs = require('fs');
 
 const templates = process.cwd() + '/templates/**/*.html';
+const components = process.cwd() + '/components/**/*.html';
 
 module.exports = {
-	files: process.cwd() + '/templates',
+	files: [
+		process.cwd() + '/templates',
+		process.cwd() + '/components'
+	],
 
 	type: 'templates',
 
@@ -23,7 +27,16 @@ module.exports = {
 				return fs.readFileSync(file); // eslint-disable-line no-sync
 			}).join('');
 
-			done(templatesHtml);
+			glob(components, {}, (error, files) => {
+				if (error) {
+					console.error(error);
+				}
+				const componentsHtml = files.map((file) => {
+					return fs.readFileSync(file); // eslint-disable-line no-sync
+				}).join('');
+
+				done(templatesHtml + componentsHtml);
+			});
 		});
 	}
 };
