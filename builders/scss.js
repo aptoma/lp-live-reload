@@ -1,6 +1,5 @@
 'use strict';
 
-// const cp = require('child_process');
 const glob = require('glob');
 const shortId = require('shortid');
 const fs = require('fs');
@@ -10,10 +9,10 @@ const sass = require('node-sass');
 const path = require('path');
 
 const stylesheets = path.normalize(process.cwd() + '/stylesheets');
-// const compileFileDir = stylesheets;
+//
+const outputDir = path.normalize(process.cwd() + '/css');
 
 module.exports = {
-
 	activate() {
 		return when.resolve();
 	},
@@ -37,7 +36,8 @@ module.exports = {
 				console.log(error);
 			}
 			files.forEach((sassFile) => {
-				const cssFile = path.normalize(sassFile.replace('.scss', '.css'));
+				const basename = path.basename(sassFile).replace('.scss', '.css');
+				const cssFile = path.join(outputDir, basename);
 				let sassCode = fs.readFileSync(sassFile); // eslint-disable-line no-sync
 
 				sassCode = '$revision: ' + options.revision + ';' + sassCode;
@@ -55,7 +55,7 @@ module.exports = {
 
 					fs.writeFileSync(cssFile, output.css); // eslint-disable-line no-sync
 
-					let fileUrl = cssFile.replace(stylesheets, options.host + '/stylesheets') + '?' + shortId.generate();
+					let fileUrl = cssFile.replace(process.cwd(), options.host) + '?' + shortId.generate();
 					fileUrl = fileUrl.replace(/\\/g, '/');
 
 					done([fileUrl]);

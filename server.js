@@ -88,7 +88,6 @@ const builders = [
 
 io.on('connection', (socket) => {
 	host = 'https://' + socket.handshake.headers.host;
-	console.log('got connection', socket.handshake.headers);
 	socket.on('revision', (rev) => {
 		console.log('Assets revision', chalk.bold.magenta(rev) + '\n');
 		startWatching();
