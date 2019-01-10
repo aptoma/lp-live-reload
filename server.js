@@ -75,6 +75,12 @@ app.use(express.static(cwd + '/assets', {
 	}
 }));
 
+app.use(express.static(cwd, {
+	setHeaders(res) {
+		res.set('Access-Control-Allow-Origin', '*');
+	}
+}));
+
 const builders = [
 	require('./builders/templates'),
 	require('./builders/scss')
@@ -85,6 +91,7 @@ io.on('connection', (socket) => {
 	console.log('got connection', socket.handshake.headers);
 	socket.on('revision', (rev) => {
 		console.log('Assets revision', chalk.bold.magenta(rev) + '\n');
+		startWatching();
 
 		revision = rev;
 	});
@@ -194,4 +201,3 @@ function getNetworks() {
 
 	return ips;
 }
-startWatching();
